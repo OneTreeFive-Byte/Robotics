@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CODE-NEON コード・ネオン | Robótica y Programación</title>
+    <script src="[https://cdn.tailwindcss.com](https://cdn.tailwindcss.com)"></script>
+    <link href="[https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css](https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css)" rel="stylesheet">
+    <link href="[https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&family=Share+Tech+Mono&family=Noto+Sans+JP:wght@400;700&display=swap](https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&family=Share+Tech+Mono&family=Noto+Sans+JP:wght@400;700&display=swap)" rel="stylesheet">
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .neon-glow { text-shadow: 0 0 5px #0ff, 0 0 10px #0ff, 0 0 20px #0ff; }
+            .neon-pink { text-shadow: 0 0 5px #f0f, 0 0 10px #f0f, 0 0 20px #f0f; }
+            .neon-green { text-shadow: 0 0 5px #0f0, 0 0 10px #0f0, 0 0 15px #0f0; }
+            .box-neon { box-shadow: 0 0 10px #0ff, inset 0 0 5px rgba(0,255,255,0.2); }
+            .box-neon-pink { box-shadow: 0 0 10px #f0f, inset 0 0 5px rgba(255,0,255,0.2); }
+            .box-neon-green { box-shadow: 0 0 10px #0f0, inset 0 0 5px rgba(0,255,0,0.2); }
+            .scanlines { background: repeating-linear-gradient(180deg, rgba(0,0,0,0.1), rgba(0,0,0,0.1) 1px, transparent 1px, transparent 2px); }
+            .glitch { position: relative; }
+            .glitch::before, .glitch::after {
+                content: attr(data-text);
+                position: absolute;
+                top: 0; left: 0; width: 100%; height: 100%;
+            }
+            .glitch::before { left: 2px; color: #f0f; z-index: -1; }
+            .glitch::after { left: -2px; color: #0ff; z-index: -1; }
+            .clip-slant { clip-path: polygon(0 0, 100% 0, 97% 100%, 3% 100%); }
+            .text-shadow-sm { text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+        }
+    </style>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'neon-cyan': '#00ffff',
+                        'neon-magenta': '#ff00ff',
+                        'neon-green': '#00ff41',
+                        'neon-amber': '#ffcc00',
+                        'dark-900': '#050508',
+                        'dark-800': '#0f111a',
+                        'dark-700': '#1a1d2b',
+                    },
+                    fontFamily: {
+                        'orbitron': ['Orbitron', 'sans-serif'],
+                        'mono-tech': ['"Share Tech Mono"', 'monospace'],
+                        'jp': ['"Noto Sans JP"', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #050508 0%, #0f111a 50%, #0a0a12 100%);
+            background-attachment: fixed;
+        }
+        .typing-cursor::after {
+            content: '█';
+            animation: blink 1s step-end infinite;
+        }
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        .float { animation: float 3s ease-in-out infinite; }
+        .particle {
+            position: absolute;
+            width: 2px; height: 2px;
+            background: rgba(0, 255, 255, 0.6);
+            border-radius: 50%;
+            animation: rise 10s linear infinite;
+        }
+        @keyframes rise {
+            0% { transform: translateY(100vh); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(-100px); opacity: 0; }
+        }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .progress-bar { transition: width 0.6s ease; }
+        pre { white-space: pre-wrap; font-size: 0.85rem; line-height: 1.4; }
+    </style>
+</head>
+<body class="text-gray-100 font-mono-tech min-h-screen">
+    <!-- Partículas de fondo -->
+    <div id="particles" class="fixed inset-0 pointer-events-none z-0"></div>
+    
+    <!-- Scanlines overlay -->
+    <div class="fixed inset-0 scanlines pointer-events-none z-10 opacity-20"></div>
+
+    <!-- Navegación -->
+    <nav class="sticky top-0 z-50 bg-dark-900/80 backdrop-blur-md border-b border-neon-cyan/30 px-4 py-3">
+        <div class="max-w-7xl mx-auto flex flex-wrap justify-between items-center">
+            <a href="#" class="font-orbitron text-2xl font-bold text-neon-cyan neon-glow">
+                CODE<span class="text-neon-magenta">NEON</span> <span class="text-sm text-gray-400">コード・ネオン</span>
+            </a>
+            <div class="flex gap-1 mt-2 md:mt-0 flex-wrap">
+                <button data-tab="inicio" class="tab-btn px-3 py-2 text-sm border border-neon-cyan/50 hover:border-neon-cyan hover:box-neon transition-all rounded-t-lg bg-dark-800">
+                    <i class="fa fa-bolt"></i> INICIO
+                </button>
+                <button data-tab="herramientas" class="tab-btn px-3 py-2 text-sm border border-neon-green/50 hover:border-neon-green hover:box-neon-green transition-all rounded-t-lg bg-dark-800">
+                    <i class="fa fa-microchip"></i> HERRAMIENTAS
+                </button>
+                <button data-tab="sensores" class="tab-btn px-3 py-2 text-sm border border-neon-amber/50 hover:border-neon-amber transition-all rounded-t-lg bg-dark-800">
+                    <i class="fa fa-cogs"></i> SENSORES
+                </button>
+                <button data-tab="proyectos" class="tab-btn px-3 py-2 text-sm border border-neon-magenta/50 hover:border-neon-magenta hover:box-neon-pink transition-all rounded-t-lg bg-dark-800">
+                    <i class="fa fa-flask"></i> PROYECTOS
+                </button>
+                <button data-tab="tinkercad" class="tab-btn px-3 py-2 text-sm border border-purple-500/50 hover:border-purple-500 transition-all rounded-t-lg bg-dark-800">
+                    <i class="fa fa-desktop"></i> SIMULACIÓN
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 py-8 relative z-20">
+        
+        <!-- ===== INICIO ===== -->
+        <section id="inicio" class="tab-content active">
+            <div class="py-16 text-center">
+                <h1 class="font-orbitron text-4xl md:text-6xl font-bold mb-6 glitch" data-text="APRENDE A CREAR">
+                    <span class="text-neon-cyan neon-glow">APRENDE A CREAR</span><br>
+                    <span class="text-neon-magenta neon-pink">EL FUTURO</span>
+                </h1>
+                <p class="text-xl text-gray-300 mb-2 font-jp">ロボット工学 × プログラミング — Robótica × Código</p>
+                <p class="text-lg text-gray-400 max-w-2xl mx-auto mb-8">
+                    Desde cero hasta proyectos reales con <span class="text-neon-green">Arduino</span>, 
+                    <span class="text-neon-cyan">Scratch</span> y 
+                    <span class="text-neon-amber">Tinkercad</span>
+                </p>
+                <div class="inline-block bg-dark-800/80 border border-neon-green/50 rounded-lg p-4 box-neon-green max-w-md text-left">
+                    <span class="text-neon-green">$</span> sistema_iniciado --modo=aprendizaje<br>
+                    <span class="text-gray-400">> Cargando módulos: Electrónica, Sensores, Automatización...</span><br>
+                    <span class="text-neon-green typing-cursor">> Listo para crear</span>
+                </div>
+                
+                <div class="mt-16 grid md:grid-cols-3 gap-6">
+                    <div class="bg-dark-800/60 border border-neon-cyan/40 rounded-xl p-6 box-neon hover:scale-105 transition-transform">
+                        <i class="fa fa-microchip text-4xl text-neon-cyan mb-4"></i>
+                        <h3 class="font-orbitron text-xl mb-2">ARDUINO</h3>
+                        <p class="text-gray-400">La placa más popular del mundo. Física + código = tus primeras invenciones.</p>
+                    </div>
+                    <div class="bg-dark-800/60 border border-neon-green/40 rounded-xl p-6 box-neon-green hover:scale-105 transition-transform">
+                        <i class="fa fa-code-fork text-4xl text-neon-green mb-4"></i>
+                        <h3 class="font-orbitron text-xl mb-2">SCRATCH</h3>
+                        <p class="text-gray-400">Programación visual sin escribir código. Bloquear, ensamblar, crear.</p>
+                    </div>
+                    <div class="bg-dark-800/60 border border-neon-magenta/40 rounded-xl p-6 box-neon-pink hover:scale-105 transition-transform">
+                        <i class="fa fa-laptop text-4xl text-neon-magenta mb-4"></i>
+                        <h3 class="font-orbitron text-xl mb-2">TINKERCAD</h3>
+                        <p class="text-gray-400">Simula antes de construir. Cero riesgo, toda la imaginación.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== HERRAMIENTAS ===== -->
+        <section id="herramientas" class="tab-content">
+            <h2 class="font-orbitron text-3xl text-neon-cyan neon-glow mb-8 border-b border-neon-cyan/30 pb-2">
+                <span class="text-gray-500">//</span> HERRAMIENTAS PRINCIPALES <span class="text-jp text-sm text-gray-500">ツール</span>
+            </h2>
+
+            <div class="grid md:grid-cols-2 gap-8 mb-12">
+                <!-- Arduino Uno -->
+                <div class="bg-dark-800/60 border border-neon-green/40 rounded-xl p-6 box-neon-green">
+                    <h3 class="font-orbitron text-2xl text-neon-green mb-4">🤖 Arduino Uno</h3>
+                    <p class="text-gray-300 mb-4">Placa de hardware libre basada en el microcontrolador ATmega328p. Estándar mundial educativo.</p>
+                    <ul class="space-y-2 text-sm">
+                        <li><span class="text-neon-amber">▸</span> 14 pines digitales (6 con PWM)</li>
+                        <li><span class="text-neon-amber">▸</span> 6 entradas analógicas</li>
+                        <li><span class="text-neon-amber">▸</span> Alimentación: 5V / 3.3V</li>
+                        <li><span class="text-neon-amber">▸</span> Comunicación: USB, I2C, SPI</li>
+                        <li><span class="text-neon-amber">▸</span> Lenguaje: C/C++ simplificado</li>
+                    </ul>
+                </div>
+
+                <!-- Scratch -->
+                <div class="bg-dark-800/60 border border-neon-cyan/40 rounded-xl p-6 box-neon">
+                    <h3 class="font-orbitron text-2xl text-neon-cyan mb-4">🧩 Scratch</h3>
+                    <p class="text-gray-300 mb-4">Lenguaje visual del MIT. Programa arrastrando bloques — sin errores de sintaxis.</p>
+                    <ul class="space-y-2 text-sm">
+                        <li><span class="text-neon-amber">▸</span> Ideal para iniciar en pensamiento computacional</li>
+                        <li><span class="text-neon-amber">▸</span> Integrable con Arduino: S4A / PictoBlox</li>
+                        <li><span class="text-neon-amber">▸</span> Crea juegos, animaciones y controla el mundo físico</li>
+                        <li><span class="text-neon-amber">▸</span> Sin instalación — funciona en el navegador</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Tinkercad + Tabla de componentes -->
+            <div class="bg-dark-800/60 border border-neon-magenta/40 rounded-xl p-6 box-neon-pink mb-8">
+                <h3 class="font-orbitron text-2xl text-neon-magenta mb-4">🖥️ Tinkercad Circuits</h3>
+                <p class="text-gray-300 mb-4">Simulación virtual gratuita de Autodesk. Prueba circuitos sin riesgo de quemar nada.</p>
+                <div class="grid md:grid-cols-3 gap-4 text-sm">
+                    <div>
+                        <span class="text-neon-magenta font-bold">📐 Diseña</span>
+                        <p class="text-gray-400 mt-1">Biblioteca completa de componentes. Arrastra y conecta.</p>
+                    </div>
+                    <div>
+                        <span class="text-neon-magenta font-bold">▶ Simula</span>
+                        <p class="text-gray-400 mt-1">Ver funcionamiento en tiempo real. Código por bloques o texto.</p>
+                    </div>
+                    <div>
+                        <span class="text-neon-magenta font-bold">📤 Construye</span>
+                        <p class="text-gray-400 mt-1">Exporta el diagrama y réplicalo en la vida real.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabla de componentes -->
+            <h3 class="font-orbitron text-xl text-neon-amber mb-4">⚡ Esquemas de Componentes Electrónicos</h3>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm border-collapse">
+                    <thead>
+                        <tr class="border-b border-gray-700">
+                            <th class="p-3 text-left text-neon-amber">Componente</th>
+                            <th class="p-3 text-left text-neon-amber">Símbolo</th>
+                            <th class="p-3 text-left text-neon-amber">Función</th>
+                            <th class="p-3 text-left text-neon-amber">Conexión típica</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="border-b border-gray-800 hover:bg-dark-700/50">
+                            <td class="p-3">LED</td>
+                            <td class="p-3">⚡</td>
+                            <td class="p-3">Emite luz</td>
+                            <td class="p-3">Ánodo → VCC + resistencia • Cátodo → GND</td>
+                        </tr>
+                        <tr class="border-b border-gray-800 hover:bg-dark-700/50">
+                            <td class="p-3">Resistencia</td>
+                            <td class="p-3">⫶</td>
+                            <td class="p-3">Limita corriente</td>
+                            <td class="p-3">En serie con el componente protegido</td>
+                        </tr>
+                        <tr class="border-b border-gray-800 hover:bg-dark-700/50">
+                            <td class="p-3">Pulsador</td>
+                            <td class="p-3">⏷</td>
+                            <td class="p-3">Entrada manual</td>
+                            <td class="p-3">Un lado → pin digital • Otro → GND</td>
+                        </tr>
+                        <tr class="border-b border-gray-800 hover:bg-dark-700/50">
+                        <tr class="border-b border-gray-800 hover:bg-dark-700/50">
+                            <td class="p-3">Potencímetro</td>
+                            <td class="p-3">⚙️</td>
+                            <td class="p-3">Ajusta voltaje</td>
+                            <td class="p-3">Extremos → 5V y GND • Centro → pin analógico</td>
+                        </tr>
+                        <tr class="border-b border-gray-800 hover:bg-dark-700/50">
+                            <td class="p-3">Buzzer / Zumbador</td>
+                            <td class="p-3">🔊</td>
+                            <td class="p-3">Emite sonido</td>
+                            <td class="p-3">(+) → pin digital • (−) → GND</td>
+                        </tr>
+                        <tr class="border-b border-gray-800 hover:bg-dark-700/50">
+                            <td class="p-3">LCD 16×2 (I2C)</td>
+                            <td class="p-3">📺</td>
+                            <td class="p-3">Muestra texto</td>
+                            <td class="p-3">VCC→5V • GND • SDA • SCL</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- ===== SENSORES ===== -->
+        <section id="sensores" class="tab-content">
+            <h2 class="font-orbitron text-3xl text-neon-amber mb-8 border-b border-neon-amber/30 pb-2">
+                <span class="text-gray-500">//</span> SENSORES & CONEXIONES <span class="text-jp text-sm text-gray-500">センサー</span>
+            </h2>
+
+            <p class="text-gray-300 mb-6">
+                <span class="text-neon-amber font-bold">📌 Regla general:</span>
+                Todos los sensores comparten: <span class="text-red-400">VCC</span> → Alimentación · 
+                <span class="text-gray-400">GND</span> → Tierra · 
+                <span class="text-green-400">SEÑAL</span> → Pin de lectura
+            </p>
+
+            <div class="grid md:grid-cols-2 gap-6 mb-8">
+                <!-- HC-SR04 Ultrasónico -->
+                <div class="bg-dark-800/60 border border-neon-cyan/40 rounded-xl p-6 box-neon">
+                    <h3 class="font-orbitron text-xl text-neon-cyan mb-3">📏 HC-SR04 — Distancia</h3>
+                    <div class="text-sm space-y-1 mb-3">
+                        <p>VCC → 5V · GND → GND · Trig → D7 · Echo → D6</p>
+                        <p class="text-gray-400">Rango: 2–450 cm</p>
+                        <p class="text-gray-300"><strong>Uso:</strong> Obstáculos, nivel de agua, alarma proximidad</p>
+                    </div>
+                    <pre class="bg-dark-900/80 p-3 rounded text-xs text-green-300">
+// Lectura rápida
+long duracion, distancia;
+digitalWrite(trig, LOW);
+delayMicroseconds(2);
+digitalWrite(trig, HIGH);
+delayMicroseconds(10);
+digitalWrite(trig, LOW);
+duracion = pulseIn(echo, HIGH);
+distancia = duracion * 0.034 / 2;</pre>
+                </div>
+
+                <!-- DHT11 / DHT22 Temperatura y Humedad -->
+                <div class="bg-dark-800/60 border border-neon-green/40 rounded-xl p-6 box-neon-green">
+                    <h3 class="font-orbitron text-xl text-neon-green mb-3">🌡️ DHT11 — Temp. y Humedad</h3>
+                    <div class="text-sm space-y-1 mb-3">
+                        <p>VCC → 5V · GND → GND · DATA → D2</p>
+                        <p class="text-gray-400">DHT11: 0–50°C / 20–90% HR</p>
+                        <p class="text-gray-300"><strong>Uso:</strong> Estación meteorológica, ventilación automática</p>
+                    </div>
+                    <pre class="bg-dark-900/80 p-3 rounded text-xs text-green-300">
+// Con librería DHT
+float t = dht.readTemperature();
+float h = dht.readHumidity();
+Serial.print("Temp: "); Serial.print(t);
+Serial.print("°C | Humedad: "); Serial.print(h); Serial.println("%");</pre>
+                </div>
+
+                <!-- PIR Movimiento -->
+                <div class="bg-dark-800/60 border border-neon-magenta/40 rounded-xl p-6 box-neon-pink">
+                    <h3 class="font-orbitron text-xl text-neon-magenta mb-3">👁️ PIR — Movimiento</h3>
+                    <div class="text-sm space-y-1 mb-3">
+                        <p>VCC → 5V · GND → GND · OUT → D2</p>
+                        <p class="text-gray-400">Detecta cambios de radiación infrarroja</p>
+                        <p class="text-gray-300"><strong>Uso:</strong> Luces automáticas, alarma, ahorro energético</p>
+                    </div>
+                    <pre class="bg-dark-900/80 p-3 rounded text-xs text-green-300">
+int lectura = digitalRead(pirPin);
+if (lectura == HIGH) {
+  Serial.println("¡Movimiento detectado!");
+  digitalWrite(led, HIGH);
+} else {
+  digitalWrite(led, LOW);
+}</pre>
+                </div>
+
+                <!-- LDR Luz -->
+                <div class="bg-dark-800/60 border border-neon-amber/40 rounded-xl p-6">
+                    <h3 class="font-orbitron text-xl text-neon-amber mb-3">💡 LDR — Nivel de Luz</h3>
+                    <div class="text-sm space-y-1 mb-3">
+                        <p>LDR + Resistencia → Divisor de tensión → A0</p>
+                        <p class="text-gray-400">Valor alto = poca luz · Valor bajo = mucha luz</p>
+                        <p class="text-gray-300"><strong>Uso:</strong> Encendido automático, cortinas solares</p>
+                    </div>
+                    <pre class="bg-dark-900/80 p-3 rounded text-xs text-green-300">
+int luz = analogRead(ldrPin);
+if (luz > 600) {
+  digitalWrite(led, HIGH); // Está oscuro → encender
+} else {
+  digitalWrite(led, LOW);  // Hay luz → apagar
+}</pre>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== PROYECTOS: MACETA INTELIGENTE ===== -->
+        <section id="proyectos" class="tab-content">
+            <h2 class="font-orbitron text-3xl text-neon-magenta neon-pink mb-8 border-b border-neon-magenta/30 pb-2">
+                <span class="text-gray-500">//</span> PROYECTO ESTRELLA <span class="text-jp text-sm text-gray-500">プロジェクト</span>
+            </h2>
+
+            <div class="bg-dark-800/60 border border-neon-green/40 rounded-xl p-6 box-neon-green mb-8">
+                <h3 class="font-orbitron text-2xl text-neon-green mb-4">🌱 Maceta Inteligente — Riego Automático</h3>
+                
+                <div class="grid md:grid-cols-2 gap-8">
+                    <!-- Conexiones -->
+                    <div>
+                        <h4 class="text-lg font-bold text-neon-cyan mb-3">🔌 Conexiones</h4>
+                        <table class="w-full text-sm mb-4">
+                            <thead>
+                                <tr class="text-neon-cyan">
+                                    <th class="text-left p-2 border-b border-gray-700">Componente</th>
+                                    <th class="text-left p-2 border-b border-gray-700">Pin Arduino</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-gray-300">
+                                <tr><td class="p-2">Sensor Humedad VCC</td><td class="p-2">5V 🔴</td></tr>
+                                <tr><td class="p-2">Sensor Humedad GND</td><td class="p-2">GND ⚫</td></tr>
+                                <tr><td class="p-2">Sensor Humedad AO</td><td class="p-2">A0 🟢</td></tr>
+                                <tr><td class="p-2">Relé VCC</td><td class="p-2">5V 🔴</td></tr>
+                                <tr><td class="p-2">Relé GND</td><td class="p-2">GND ⚫</td></tr>
+                                <tr><td class="p-2">Relé IN</td><td class="p-2">D7 🟡</td></tr>
+                                <tr><td class="p-2">Relé COM → Bomba +</td><td class="p-2">—</td></tr>
+                                <tr><td class="p-2">Relé NO → Fuente +</td><td class="p-2">—</td></tr>
+                                <tr><td class="p-2">Bomba −</td><td class="p-2">GND ⚫</td></tr>
+                            </tbody>
+                        </table>
+                        <p class="text-yellow-400 text-sm">⚠️ La bomba necesita su propia fuente de alimentación externa. Nunca conectarla directamente a los pines del Arduino.</p>
+                    </div>
+
+                    <!-- Código -->
+                    <div>
+                        <h4 class="text-lg font-bold text-neon-green mb-3">💻 Código Completo</h4>
+                        <pre class="bg-dark-900/80 p-4 rounded text-xs text-green-300 overflow-auto max-h-96">
+/*
+  MACETA INTELIGENTE — Riego Automático
+  Placa: Arduino Uno
+*/
+
+const int pinHumedad = A0;
+const int pinRele = 7;
+
+// Calibra estos valores con tu sensor
+const int SECO  = 350;  // Encender si supera
+const int HUMEDO = 200; // Apagar si baja
+
+int estadoBomba = LOW;
+int valorSensor = 0;
+
+void setup() {
+  pinMode(pinRele, OUTPUT);
+  digitalWrite(pinRele, LOW);
+  Serial.begin(9600);
+  Serial.println("=== SISTEMA DE RIEGO INICIADO ===");
+}
+
+void loop() {
+  valorSensor = analogRead(pinHumedad);
+  
+  Serial.print("Valor: ");
+  Serial.print(valorSensor);
+
+  if (valorSensor > SECO && estadoBomba == LOW) {
+    estadoBomba = HIGH;
+    digitalWrite(pinRele, HIGH);
+    Serial.println(" → 🌵 SECO — ENCENDIENDO BOMBA");
+  } 
+  else if (valorSensor < HUMEDO && estadoBomba == HIGH) {
+    estadoBomba = LOW;
+    digitalWrite(pinRele, LOW);
+    Serial.println(" → 💧 HÚMEDO — APAGANDO BOMBA");
+  }
+  else {
+    Serial.println(" → OK");
+  }
+
+  delay(2000); // Esperar 2 segundos
+}</pre>
+                    </div>
+                </div>
+
+                <!-- Pasos de calibración -->
+                <div class="mt-6 p-4 bg-dark-900/50 rounded-lg border border-neon-amber/30">
+                    <h4 class="text-neon-amber font-bold mb-2">📐 Calibración Paso a Paso</h4>
+                    <ol class="list-decimal list-inside text-gray-300 space-y-1 text-sm">
+                        <li>Conecta todo sin la bomba aún</li>
+                        <li>Abre el Monitor Serie a 9600 baudios</li>
+                        <li>Con el sensor al aire → anota el valor → ese es tu <code class="bg-dark-700 px-1 rounded">SECO</code></li>
+                        <li>Con el sensor en agua/tierra húmeda → anota → ese es tu <code class="bg-dark-700 px-1 rounded">HUMEDO</code></li>
+                        <li>Modifica el código con tus valores y vuelve a cargar</li>
+                        <li>Agrega al menos 50 puntos de diferencia entre ambos para estabilidad</li>
+                    </ol>
+                </div>
+            </div>
+
+            <!-- Otros proyectos -->
+            <h3 class="font-orbitron text-xl text-neon-amber mb-4">🔥 Otros Proyectos Disponibles</h3>
+            <div class="grid md:grid-cols-3 gap-4">
+                <div class="bg-dark-800/60 border border-neon-cyan/30 rounded-lg p-4 hover:border-neon-cyan transition-colors">
+                    <h4 class="font-bold text-neon-cyan">Semáforo Inteligente</h4>
+                    <p class="text-gray-400 text-sm mt-1">LEDs + Pulsador/PIR → Control de paso peatonal</p>
+                </div>
+                <div class="bg-dark-800/60 border border-neon-green/30 rounded-lg p-4 hover:border-neon-green transition-colors">
+                    <h4 class="font-bold text-neon-green">Estación Meteorológica</h4>
+                    <p class="text-gray-400 text-sm mt-1">DHT11 + LCD → Muestra temp y humedad en tiempo real</p>
+                </div>
+                <div class="bg-dark-800/60 border border-neon-magenta/30 rounded-lg p-4 hover:border-neon-magenta transition-colors">
+                    <h4 class="font-bold text-neon-magenta">Alarma de Seguridad</h4>
+                    <p class="text-gray-400 text-sm mt-1">HC-SR04/PIR + Zumbador → Detecta intrusos</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== SIMULACIÓN TINKERCAD ===== -->
+        <section id="tinkercad" class="tab-content">
+            <h2 class="font-orbitron text-3xl text-purple-400 mb-8 border-b border-purple-500/30 pb-2">
+                <span class="text-gray-500">//</span> SIMULACIÓN EN TINKERCAD <span class="text-jp text-sm text-gray-500">シミュレーション</span>
+            </h2>
+
+            <div class="bg-dark-800/60 border border-purple-500/40 rounded-xl p-6 mb-8">
+                <h3 class="font-orbitron text-xl text-purple-300 mb-4">🎮 Maceta Inteligente — Versión Virtual</h3>
+                <p class="text-gray-300 mb-4">Prueba el proyecto sin componentes físicos. Usa el motor DC como simulación de bomba y el control deslizante del sensor.</p>
+
+                <div class="grid md:grid-cols-2 gap-8">
+                    <!-- Conexiones virtuales -->
+                    <div>
+                        <h4 class="font-bold text-purple-300 mb-3">🔌 En el diagrama virtual</h4>
+                        <table class="w-full text-sm mb-4">
+                            <thead>
+                                <tr class="text-purple-300">
+                                    <th class="text-left p-2 border-b border-gray-700">Componente</th>
+                                    <th class="text-left p-2 border-b border-gray-700">Pin Arduino</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-gray-300">
+                                <tr><td class="p-2">Sensor Humedad → VCC</td><td class="p-2">5V</td></tr>
+                                <tr><td class="p-2">Sensor Humedad → GND</td><td class="p-2">GND</td></tr>
+                                <tr><td class="p-2">Sensor Humedad → AO</td><td class="p-2">A0</td></tr>
+                                <tr><td class="p-2">Relé → VCC</td><td class="p-2">5V</td></tr>
+                                <tr><td class="p-2">Relé → GND</td><td class="p-2">GND</td></tr>
+                                <tr><td class="p-2">Relé → IN</td><td class="p-2">D7</td></tr>
+                                <tr><td class="p-2">Relé COM → Motor +</td><td class="p-2">—</td></tr>
+                                <tr><td class="p-2">Relé NO → 5V</td><td class="p-2">—</td></tr>
+                                <tr><td class="p-2">Motor −</td><td class="p-2">GND</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Bloques de programación -->
+                    <div>
+                        <h4 class="font-bold text-purple-300 mb-3">🧱 Código por Bloques</h4>
+                        <pre class="bg-dark-900/80 p-4 rounded text-xs text-purple-200">
+AL INICIAR
+  Establecer pin 7 como SALIDA
+  Escribir pin 7 → BAJO
+  Iniciar serie a 9600
+  UMBRAL_SECO = 350
+  UMBRAL_HUMEDO = 200
+  estadoBomba = BAJO
+
+POR SIEMPRE
+  valor = leer A0
+  Enviar por serie "Valor: " + valor
+
+  SI valor > UMBRAL_SECO Y estadoBomba = BAJO:
+    escribir pin 7 → ALTO
+    estadoBomba = ALTO
+    enviar " → BOMBA ENCENDIDA 💧"
+  SI NO SI valor < UMBRAL_HUMEDO Y estadoBomba = ALTO:
+    escribir pin 7 → BAJO
+    estadoBomba = BAJO
+    enviar " → BOMBA
+    enviar " → BOMBA APAGADA ✅"
+  FIN SI
+
+  Esperar 2000 milisegundos
+</pre>
+                    </div>
+                </div>
+
+                <!-- Pasos de simulación -->
+                <div class="mt-6 p-4 bg-dark-900/50 rounded-lg border border-purple-500/30">
+                    <h4 class="text-purple-300 font-bold mb-2">🧪 Cómo Probar</h4>
+                    <ol class="list-decimal list-inside text-gray-300 space-y-1 text-sm">
+                        <li>Arrastra todos los componentes al área de trabajo</li>
+                        <li>Conecta siguiendo la tabla anterior</li>
+                        <li>Ve a la pestaña <strong>Código → Bloques</strong></li>
+                        <li>Arma el diagrama tal como se muestra arriba</li>
+                        <li>Pulsa ▶ <strong>Iniciar simulación</strong></li>
+                        <li>Haz clic sobre el sensor → mueve el control deslizante:</li>
+                        <ul class="list-disc list-inside ml-4 text-gray-400">
+                            <li>Hacia seco → valor sube → motor gira 💧</li>
+                            <li>Hacia húmedo → valor baja → motor se detiene ✅</li>
+                        </ul>
+                        <li>Abre el <strong>Monitor Serie</strong> para ver los valores en tiempo real</li>
+                    </ol>
+                </div>
+
+                <!-- De virtual a real -->
+                <div class="mt-6 p-4 bg-dark-900/50 rounded-lg border border-neon-green/30">
+                    <h4 class="text-neon-green font-bold mb-2">🔄 De la Simulación a la Vida Real</h4>
+                    <div class="grid md:grid-cols-2 gap-4 text-sm">
+                        <div>
+                            <p class="text-purple-300 font-bold mb-1">En Tinkercad</p>
+                            <ul class="text-gray-400 space-y-1">
+                                <li>Motor DC visual → Bomba de agua real</li>
+                                <li>Control deslizante → Sensor enterrado en la tierra</li>
+                                <li>Alimentación simplificada → Fuente externa para la bomba</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <p class="text-neon-green font-bold mb-1">En la realidad</p>
+                            <ul class="text-gray-400 space-y-1">
+                                <li>⚠️ Nunca conectar la bomba directamente a los pines del Arduino</li>
+                                <li>Usar siempre el relé como intermediario</li>
+                                <li>Limpiar las puntas del sensor cada 2 semanas</li>
+                                <li>No dejar la bomba funcionando sin agua</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Variantes para explorar -->
+            <h3 class="font-orbitron text-xl text-neon-amber mb-4">💡 Variantes para Ampliar el Proyecto</h3>
+            <div class="grid md:grid-cols-2 gap-4 mb-8">
+                <div class="bg-dark-800/60 border border-neon-cyan/30 rounded-lg p-4">
+                    <h4 class="font-bold text-neon-cyan">🟢 Indicador Visual</h4>
+                    <p class="text-gray-400 text-sm mt-1">Agrega LEDs: Verde = todo bien · Rojo = necesita agua. Conecta a pines digitales y controla desde el código.</p>
+                </div>
+                <div class="bg-dark-800/60 border border-neon-magenta/30 rounded-lg p-4">
+                    <h4 class="font-bold text-neon-magenta">📺 Pantalla LCD</h4>
+                    <p class="text-gray-400 text-sm mt-1">Muestra el porcentaje de humedad y el estado de la bomba sin necesidad del monitor serie.</p>
+                </div>
+                <div class="bg-dark-800/60 border border-neon-green/30 rounded-lg p-4">
+                    <h4 class="font-bold text-neon-green">⏱️ Tiempo de Seguridad</h4>
+                    <p class="text-gray-400 text-sm mt-1">Limita el riego a 10 segundos máximo para no inundar: agrega un contador de tiempo activo.</p>
+                </div>
+                <div class="bg-dark-800/60 border border-neon-amber/30 rounded-lg p-4">
+                    <h4 class="font-bold text-neon-amber">📱 Notificación por Wi-Fi</h4>
+                    <p class="text-gray-400 text-sm mt-1">Con ESP32: envía un mensaje al celular cuando el riego se activa o el depósito está vacío.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== SECCIÓN APRENDIZAJE ===== -->
+        <section class="bg-dark-800/60 border border-neon-cyan/30 rounded-xl p-6 box-neon mb-8">
+            <h2 class="font-orbitron text-2xl text-neon-cyan neon-glow mb-4">📚 Lo que Aprenderás</h2>
+            <div class="grid md:grid-cols-2 gap-4 text-sm">
+                <ul class="space-y-2 text-gray-300">
+                    <li>✅ Lectura de sensores analógicos y comparación de valores</li>
+                    <li>✅ Uso de umbrales para control automático</li>
+                    <li>✅ Manejo de relés para dispositivos de mayor potencia</li>
+                    <li>✅ Calibración de sensores según el entorno real</li>
+                </ul>
+                <ul class="space-y-2 text-gray-300">
+                    <li>✅ Montaje virtual y físico de circuitos completos</li>
+                    <li>✅ Programación por bloques y por código texto</li>
+                    <li>✅ Conexión entre simulación y montaje en la vida real</li>
+                    <li>✅ Aplicación de automatización en el hogar cotidiano</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- ===== SEGURIDAD ===== -->
+        <section class="bg-dark-800/60 border border-yellow-500/30 rounded-xl p-6 mb-8">
+            <h2 class="font-orbitron text-xl text-yellow-400 mb-4">⚠️ Normas de Seguridad</h2>
+            <div class="grid md:grid-cols-2 gap-4 text-sm text-gray-300">
+                <div>
+                    <p class="font-bold text-yellow-300 mb-2">Antes de conectar</p>
+                    <ul class="space-y-1">
+                        <li>• Verifica que no haya cables sueltos o cruzados</li>
+                        <li>• Confirma polaridad: VCC → nunca a GND</li>
+                        <li>• Desconecta el USB antes de modificar conexiones</li>
+                    </ul>
+                </div>
+                <div>
+                    <p class="font-bold text-yellow-300 mb-2">Al trabajar</p>
+                    <ul class="space-y-1">
+                        <li>• Solo usar 5V o 3.3V — nunca corriente de red</li>
+                        <li>• La bomba siempre con fuente propia + relé</li>
+                        <li>• No tocar componentes con la mano húmeda</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ===== PIE DE PÁGINA ===== -->
+    <footer class="border-t border-neon-cyan/20 py-6 text-center text-gray-500 text-sm">
+        <p class="font-orbitron text-neon-cyan neon-glow mb-2">CODE<span class="text-neon-magenta">NEON</span> コード・ネオン</p>
+        <p>Plataforma Didáctica de Robótica y Programación</p>
+        <p class="mt-1">Arduino · Scratch · Tinkercad · Electrónica</p>
+        <p class="mt-2 text-xs">© 2026 — Aprende, Crea, Innova</p>
+    </footer>
+
+    <!-- ===== JAVASCRIPT ===== -->
+    <script>
+        // Generar partículas de fondo
+        const particlesContainer = document.getElementById('particles');
+        for (let i = 0; i < 40; i++) {
+            const p = document.createElement('div');
+            p.classList.add('particle');
+            p.style.left = Math.random() * 100 + '%';
+            p.style.animationDelay = Math.random() * 10 + 's';
+            p.style.animationDuration = (8 + Math.random() * 6) + 's';
+            particlesContainer.appendChild(p);
+        }
+
+        // Sistema de pestañas
+        const tabButtons = document.querySelectorAll('.tab-btn');
+        const tabContents = document.querySelectorAll('.tab-content');
+
+        tabButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const targetTab = btn.getAttribute('data-tab');
+
+                // Quitar activo de todos
+                tabButtons.forEach(b => {
+                    b.classList.remove('bg-dark-700', 'font-bold', 'neon-glow');
+                });
+                tabContents.forEach(c => c.classList.remove('active'));
+
+                // Activar seleccionado
+                btn.classList.add('bg-dark-700', 'font-bold', 'neon-glow');
+                document.getElementById(targetTab).classList.add('active');
+            });
+        });
+
+        // Activar pestaña de inicio por defecto
+        document.querySelector('[data-tab="inicio"]').classList.add('bg-dark-700', 'font-bold', 'neon-glow');
+    </script>
+
+</body>
+</html>
